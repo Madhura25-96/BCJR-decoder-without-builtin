@@ -14,25 +14,25 @@ length_encMsg = length(y);
 expMsg = length_encMsg*Rate;
 decoded_msg = zeros(1,expMsg);
 States = trellis.numStates;
-%% Step1 compute gamma:- Branch Metric, sigma is estimated
+%%Step1 compute gamma:- Branch Metric, sigma is estimated
 sigma = 10^(-snr/10);
 awgn_output = awgn(y,snr);
-%% disp('AWGN Output');
-%% disp(awgn_output);
+%%disp('AWGN Output');
+%%disp(awgn_output);
 Gamma = zeros(States,States,expMsg);
 disp('TRELLLIS Outputs');
 disp(trellis.outputs);
 disp('Trellis Next States');
 disp(trellis.nextStates);
-%% Z = No of Stages.
+%%Z = No of Stages.
 z = 1;
 prev_st = 1;
 for present_st = 1:States
-    %% If there is any branch
+    %%If there is any branch
     [data2,index] =  ismember(present_st-1, trellis.nextStates(prev_st,:));
     if data2 == 1
        e = trellis.outputs(prev_st,index);
-       %% this is done because we need 00 and 01 instead of and 1
+       %%this is done because we need 00 and 01 instead of and 1
         if (e == 0)
           e = [0 0];
         elseif (e == 1)
@@ -51,13 +51,13 @@ for present_st = 1:States
           disp(Gamma);
     end
 end
-%% For prev_st = 2 and 3 we dont want to calculate
+%%For prev_st = 2 and 3 we dont want to calculate
 for z = 2:expMsg
             for prev_st = 1:States
-                %% If for a node there is no branch, it means its sum from previous stage is 0, this way its gamma is zero
-                %% gamma is zero even for present stage
-                %% Example in stage 1 node 2 has no branch, so sum of all previous states[(1,2,1),(2,2,1),(3,2,1),(4,2,1)] = 0
-                %% Gamma [(2,1,2),(2,2,2),(2,3,2),(2,4,2)] == 0
+                %%If for a node there is no branch, it means its sum from previous stage is 0, this way its gamma is zero
+                %%gamma is zero even for present stage
+                %%Example in stage 1 node 2 has no branch, so sum of all previous states[(1,2,1),(2,2,1),(3,2,1),(4,2,1)] = 0
+                %%Gamma [(2,1,2),(2,2,2),(2,3,2),(2,4,2)] == 0
                 if(sum(Gamma(:,prev_st,z-1)) == 0 )
                     Gamma(prev_st,:,z) == 0;
                 else
@@ -65,7 +65,7 @@ for z = 2:expMsg
                     [data2,index] =  ismember(present_st-1, trellis.nextStates(prev_st,:));
                     if data2 == 1
                         e = trellis.outputs(prev_st,index);
-                 %% this is done because we need 00 and 01 instead of and 1
+                 %%this is done because we need 00 and 01 instead of and 1
                         if (e == 0)
                             e = [0 0];
                         elseif (e == 1)
@@ -87,7 +87,7 @@ for z = 2:expMsg
             end 
 end
 end
-%% Step 2:-  Alpha recursions
+%%Step 2:-  Alpha recursions
 alpha = zeros(States,expMsg+1);
 disp('Estimated Msg');
 disp(expMsg);
@@ -96,10 +96,10 @@ disp(States);
 alpha(:,1) = 0;
 alpha(1,1) = 1;
 for index = 2:expMsg+1
-     %% alpha what matters is the prev state
+     %%alpha what matters is the prev state
      for present_st = 1:States
          for prev_st = 1:States
-             %% alpha recursion
+             %%alpha recursion
              alpha(present_st,index) = alpha(present_st,index) + Gamma(prev_st,present_st,index-1)*alpha(prev_st,index-1);
           end
      end
@@ -108,7 +108,7 @@ for index = 2:expMsg+1
  %Step 3 :- ******beta recursions******
  beta = zeros(States,expMsg+1);
  beta(:,expMsg+1) = alpha(:,1);
- %% since we want backward for beta
+ %%since we want backward for beta
  for inde=expMsg+1:-1:2
        for present_st = 1:States
            for prev_st = 1:States
@@ -122,7 +122,7 @@ for index = 2:expMsg+1
  disp(alpha);
  disp('Beta');
  disp(beta);
- % Step 4 :- Log likelihood is based on log( input 0/ input = 1)
+ %Step 4 :- Log likelihood is based on log( input 0/ input = 1)
  for q = 1:expMsg
        cnt1 = 0;
        cnt2 =0;
@@ -131,10 +131,10 @@ for index = 2:expMsg+1
        for present_st = 1:States
               for prev_st = 1:States
                   [data2,index2] = ismember(prev_st-1,trellis.nextStates(present_st,:));
-                 %% disp('data2');
-                 %% disp(data2);
-                 %% disp('index2');
-                 %% disp(index2);
+                 %%disp('data2');
+                 %%disp(data2);
+                 %%disp('index2');
+                 %%disp(index2);
                   if (data2==1 && index2==1) %input = 0
                        JointProb_input1= JointProb_input1 + alpha(present_st,q)*Gamma(present_st,prev_st,q)*beta(prev_st,q+1);
                        disp('Joint Probability input1');
